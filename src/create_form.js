@@ -13,13 +13,6 @@ const CUSTOM_CELL_LABEL = {
 const CUSTOM_SEARCH_ROW_MAX = 100;
 
 /**
- * WEBアプリ用のエントリポイント
- */
-function doGet() {
-  createForm();
-}
-
-/**
  * データからアンケートFormを作成
  */
 function createForm() {
@@ -41,16 +34,11 @@ function createForm() {
   // 既存データから、対象を検索
   var mainQuestion = null;
   let itemsNum = form.getItems();
-  // 最初に現れた複数選択質問を対象とする
   for (let i = 0; i < itemsNum.length; i++) {
     let c = form.getItems()[i];
     if (c.getTitle() == formInfo.mainSelection.title) {
       mainQuestion = c.asCheckboxItem();
     }
-  }
-  if (mainQuestion == null) {
-    console.log("対象質問なし");
-    mainQuestion = form.addCheckboxItem();
   }
 
   // ******************************
@@ -61,9 +49,46 @@ function createForm() {
     .setHelpText(formInfo.mainSelection.desc)
     .setChoices(
       formInfo.mainSelection.selections.map((obj) =>
-        mainQuestion.createChoice(obj.title)
+        mainQuestion.createChoice(createSelectText(obj))
       )
     );
+
+  // // ******************************
+  // // *** ヒント ***
+  // // ******************************
+  // // 一旦すべて削除
+  // form
+  //   .getItems(FormApp.ItemType.IMAGE)
+  //   .forEach((item) => form.deleteItem(item));
+  // // 作成
+  // formInfo.mainSelection.selections.forEach((obj) => {
+  //   if (obj.desc.trim() == "" && obj.image.trim() == "") {
+  //     return;
+  //   }
+
+  //   let item = form.addImageItem();
+  //   // タイトル
+  //   item.setTitle(obj.title);
+  //   // 画像
+  //   if (obj.image.trim() != "") {
+  //     let img = UrlFetchApp.fetch(obj.image);
+  //     item.setImage(img);
+  //     item.setWidth(300);
+  //   } else {
+  //     // 画像なし
+  //   }
+  //   // 説明文
+  //   if (obj.desc.trim() != "") {
+  //     item.setHelpText(obj.desc);
+  //   }
+  // });
+}
+
+function createSelectText(obj) {
+  return (
+    `【${obj.title}】  ${obj.desc}  ` +
+    (obj.count > 0 ? `(投票数:${obj.count})` : "★NEW★")
+  );
 }
 
 /**
@@ -80,26 +105,26 @@ function getFormInfo() {
     mainSelection: {
       title: customVal(sheet, CUSTOM_CELL_LABEL.SELECTION_TITLE),
       desc: customVal(sheet, CUSTOM_CELL_LABEL.SELECTION_DESC),
-      selections: [],
+      selections: getMoviesData(sheet),
     },
   };
-  // アンケート選択肢selectionsを生成
-  {
-    let row = findKeyFromA(sheet, CUSTOM_CELL_LABEL.SELECTION_DATA_START);
-    // ヘッダ分の次の行
-    row += 2;
-    let table = customTable(sheet, row, 1, 4);
-    info.mainSelection.selections = table.map((line) => {
-      return {
-        title: line[0],
-        year: line[1],
-        desc: line[2],
-        count: line[3],
-      };
-    });
-  }
 
   return info;
+}
+
+function getMoviesData(sheet) {
+  let row = findKeyFromA(sheet, CUSTOM_CELL_LABEL.SELECTION_DATA_START);
+  // ヘッダ分の次の行
+  row += 2;
+  let table = customTable(sheet, row, 1, 4);
+  return table.map((line) => {
+    return {
+      title: line[0],
+      desc: line[1],
+      image: line[2],
+      count: line[3],
+    };
+  });
 }
 
 ////////////////////////////////
@@ -170,9 +195,47 @@ function customTable(sheet, firstRow, firstCol, colNum) {
 // クイズにする
 // form.setDescription(formDescription).setIsQuiz(true);
 
-// 画像要素
-// var img = UrlFetchApp.fetch('https://www.google.com/images/srpr/logo4w.png');
-// form.addImageItem()
-//     .setTitle('Google')
-//     .setHelpText('Google Logo') // The help text is the image description
-//     .setImage(img);
+// let check = document.querySelector("input[type='checkbox']");
+// check.addEventListener("click", (event) => {
+//   let target = event.currentTarget;
+//   let table = document.createElement("table");
+//   target.appendChild(table);
+//   fetch("xxxxxx")
+//     .then((response) => response.json())
+//     .then((data) => {
+//       console.log(data);
+//       target.appendChild(data);
+//     });
+// });
+
+/**
+ * WEBアプリ用のエントリポイント
+ */
+function doGet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEETNAME_DATA);
+  let payload = getMoviesData(sheet)
+    .map((data) => {
+      let ret = "";
+      if (data.desc) {
+        ret += `<h3>${data.title}</h3><span>${data.desc.replace(
+          "\\n",
+          "<br>"
+        )}</span>`;
+      }
+      if (data.image) {
+        ret += `<image src="${data.image}">`;
+      }
+      if (ret) {
+        ret = `<div>${ret}</div>`;
+      }
+      return ret;
+    })
+    .join("");
+
+  var output = ContentService.createTextOutput();
+  output.setMimeType(ContentService.MimeType.TEXT);
+  output.setContent(payload);
+
+  return output;
+}
