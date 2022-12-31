@@ -28,9 +28,9 @@ function createForm() {
   // アンケート用質問
   let mainQuestion = null;
 
-  // ID指定あれば流用。なければ新規作成
   const formId = customVal(sheet, CUSTOM_CELL_LABEL.FORM_ID);
   if (formId) {
+    // ID指定あれば既存のFormを流用
     form = FormApp.openById(formId);
     // 既存の質問の中から対象を検索
     let itemsNum = form.getItems();
@@ -41,7 +41,10 @@ function createForm() {
       }
     }
   } else {
+    // ID指定なければFormを新規作成
     form = FormApp.create(formInfo.title);
+    // このスクリプトの設定されているSpreadSheetに回答を保存
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
   }
   if (mainQuestion == null) {
     mainQuestion = form.addCheckboxItem();
