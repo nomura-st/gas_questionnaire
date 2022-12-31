@@ -20,26 +20,36 @@ function createForm() {
   // const ss = SpreadsheetApp.openById("xxxx");
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEETNAME_DATA);
-  // *** 作成先アンケートとなるForm ***
-  const form = FormApp.openById(customVal(sheet, CUSTOM_CELL_LABEL.FORM_ID));
 
-  // その他情報
+  // アンケートFormの情報
   const formInfo = getFormInfo();
+  // *** 作成先アンケートとなるForm ***
+  let form = null;
+  // アンケート用質問
+  let mainQuestion = null;
+
+  // ID指定あれば流用。なければ新規作成
+  const formId = customVal(sheet, CUSTOM_CELL_LABEL.FORM_ID);
+  if (formId) {
+    form = FormApp.openById(formId);
+    // 既存の質問の中から対象を検索
+    let itemsNum = form.getItems();
+    for (let i = 0; i < itemsNum.length; i++) {
+      let c = form.getItems()[i];
+      if (c.getTitle() == formInfo.mainSelection.title) {
+        mainQuestion = c.asCheckboxItem();
+      }
+    }
+  } else {
+    form = FormApp.create(formInfo.title);
+  }
+  if (mainQuestion == null) {
+    mainQuestion = form.addCheckboxItem();
+  }
 
   // アンケートの基本データを設定
   form.setTitle(formInfo.title);
   form.setDescription(formInfo.desc);
-
-  // アンケートを作成
-  // 既存データから、対象を検索
-  var mainQuestion = null;
-  let itemsNum = form.getItems();
-  for (let i = 0; i < itemsNum.length; i++) {
-    let c = form.getItems()[i];
-    if (c.getTitle() == formInfo.mainSelection.title) {
-      mainQuestion = c.asCheckboxItem();
-    }
-  }
 
   // ******************************
   // *** アンケート質問 ***
@@ -86,8 +96,8 @@ function createForm() {
 
 function createSelectText(obj) {
   return (
-    `【${obj.title}】  ${obj.desc}  ` +
-    (obj.count > 0 ? `(投票数:${obj.count})` : "★NEW★")
+    `【${obj.title}】 ${obj.desc}` +
+    (obj.count > 0 ? ` （投票数:${obj.count}）` : "")
   );
 }
 
@@ -101,7 +111,7 @@ function getFormInfo() {
 
   let info = {
     title: customVal(sheet, CUSTOM_CELL_LABEL.FORM_TITLE),
-    desc: customVal(sheet, CUSTOM_CELL_LABEL.CUSTOM_CELL_LABEL),
+    desc: customVal(sheet, CUSTOM_CELL_LABEL.FORM_DESCRIPTION),
     mainSelection: {
       title: customVal(sheet, CUSTOM_CELL_LABEL.SELECTION_TITLE),
       desc: customVal(sheet, CUSTOM_CELL_LABEL.SELECTION_DESC),
