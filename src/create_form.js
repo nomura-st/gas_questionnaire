@@ -62,38 +62,13 @@ function createForm() {
         mainQuestion.createChoice(createSelectText(obj))
       )
     );
-
-  // // ******************************
-  // // *** ヒント ***
-  // // ******************************
-  // // 一旦すべて削除
-  // form
-  //   .getItems(FormApp.ItemType.IMAGE)
-  //   .forEach((item) => form.deleteItem(item));
-  // // 作成
-  // formInfo.mainSelection.selections.forEach((obj) => {
-  //   if (obj.desc.trim() == "" && obj.image.trim() == "") {
-  //     return;
-  //   }
-
-  //   let item = form.addImageItem();
-  //   // タイトル
-  //   item.setTitle(obj.title);
-  //   // 画像
-  //   if (obj.image.trim() != "") {
-  //     let img = UrlFetchApp.fetch(obj.image);
-  //     item.setImage(img);
-  //     item.setWidth(300);
-  //   } else {
-  //     // 画像なし
-  //   }
-  //   // 説明文
-  //   if (obj.desc.trim() != "") {
-  //     item.setHelpText(obj.desc);
-  //   }
-  // });
 }
 
+/**
+ * getMoviesDataの情報から、画面表示用の選択肢文字列を生成
+ * @param {*} obj getMoviesDataの情報
+ * @returns 画面表示用の選択肢文字列
+ */
 function createSelectText(obj) {
   return (
     `【${obj.title}】 ${obj.desc}` +
@@ -195,57 +170,4 @@ function customTable(sheet, firstRow, firstCol, colNum) {
     }
   }
   return [];
-}
-
-////////////////////////////////
-// 以下、ただのメモ
-// スプレッドシートに紐づけ
-// form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
-
-// クイズにする
-// form.setDescription(formDescription).setIsQuiz(true);
-
-// let check = document.querySelector("input[type='checkbox']");
-// check.addEventListener("click", (event) => {
-//   let target = event.currentTarget;
-//   let table = document.createElement("table");
-//   target.appendChild(table);
-//   fetch("xxxxxx")
-//     .then((response) => response.json())
-//     .then((data) => {
-//       console.log(data);
-//       target.appendChild(data);
-//     });
-// });
-
-/**
- * WEBアプリ用のエントリポイント
- */
-function doGet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEETNAME_DATA);
-  let payload = getMoviesData(sheet)
-    .map((data) => {
-      let ret = "";
-      if (data.desc) {
-        ret += `<h3>${data.title}</h3><span>${data.desc.replace(
-          "\\n",
-          "<br>"
-        )}</span>`;
-      }
-      if (data.image) {
-        ret += `<image src="${data.image}">`;
-      }
-      if (ret) {
-        ret = `<div>${ret}</div>`;
-      }
-      return ret;
-    })
-    .join("");
-
-  var output = ContentService.createTextOutput();
-  output.setMimeType(ContentService.MimeType.TEXT);
-  output.setContent(payload);
-
-  return output;
 }
