@@ -7,7 +7,7 @@ const CUSTOM_CELL_LABEL = {
   FORM_DESCRIPTION: "説明",
   SELECTION_TITLE: "選択肢のタイトル",
   SELECTION_DESC: "選択肢の説明",
-  SELECTION_DATA_START: "候補",
+  SELECTION_DATA_START: "映画タイトル",
 };
 // 設定ラベルを探す最大行
 const CUSTOM_SEARCH_ROW_MAX = 100;
@@ -103,7 +103,7 @@ function getFormInfo() {
 function getMoviesData(sheet) {
   let row = findKeyFromA(sheet, CUSTOM_CELL_LABEL.SELECTION_DATA_START);
   // ヘッダ分の次の行
-  row += 2;
+  row += 1;
   let table = customTable(sheet, row, 1, 4);
   return table.map((line) => {
     return {
