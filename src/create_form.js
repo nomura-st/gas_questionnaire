@@ -159,7 +159,8 @@ function customVal(sheet, key) {
 function customTable(sheet, firstRow, firstCol, colNum) {
   // 指定された行から、firstCol列が空になる行まで
   for (let r = firstRow; r - firstRow < CUSTOM_SEARCH_ROW_MAX; r++) {
-    if (sheet.getRange(r, firstCol).getDisplayValue() == "") {
+    let value = sheet.getRange(r, firstCol).getDisplayValue();
+    if (value == "") {
       let rowNum = r - firstRow;
       if (rowNum == 0) {
         // データなし
@@ -170,6 +171,11 @@ function customTable(sheet, firstRow, firstCol, colNum) {
       return sheet
         .getRange(firstRow, firstCol, rowNum, colNum)
         .getDisplayValues();
+    } else {
+      // Form作成時に違いが出ないようにタイトルを修正
+      sheet
+        .getRange(r, firstCol)
+        .setValue(value.trim().replaceAll(/[\s　]+/g, " "));
     }
   }
   return [];
