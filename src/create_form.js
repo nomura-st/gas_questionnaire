@@ -10,7 +10,7 @@ const CUSTOM_CELL_LABEL = {
   SELECTION_DATA_START: "映画タイトル",
 };
 // 設定ラベルを探す最大行
-const CUSTOM_SEARCH_ROW_MAX = 100;
+const CUSTOM_SEARCH_ROW_MAX = 500;
 
 /**
  * データからアンケートFormを作成
@@ -156,12 +156,16 @@ function customVal(sheet, key) {
  * @param {*} sheet 対象シート
  * @returns 二重配列
  */
-function customTable(sheet, firstRow, firstCol, colNum) {
+function customTable(sheet, firstRow, firstCol, colNum, isChange = true) {
   // 指定された行から、firstCol列が空になる行まで
   for (let r = firstRow; r - firstRow < CUSTOM_SEARCH_ROW_MAX; r++) {
     let value = sheet.getRange(r, firstCol).getDisplayValue();
     if (value == "") {
       let rowNum = r - firstRow;
+      console.log(
+        `get table from SHEET[${sheet.getSheetName()}] ` +
+          `at range(row:${firstRow}-${r}, col:${firstCol}-${firstCol + colNum})`
+      );
       if (rowNum == 0) {
         // データなし
         return [];
@@ -172,10 +176,12 @@ function customTable(sheet, firstRow, firstCol, colNum) {
         .getRange(firstRow, firstCol, rowNum, colNum)
         .getDisplayValues();
     } else {
-      // Form作成時に違いが出ないようにタイトルを修正
-      sheet
-        .getRange(r, firstCol)
-        .setValue(value.trim().replaceAll(/[\s　]+/g, " "));
+      if (isChange) {
+        // Form作成時に違いが出ないようにタイトルを修正
+        sheet
+          .getRange(r, firstCol)
+          .setValue(value.trim().replaceAll(/[\s　]+/g, " "));
+      }
     }
   }
   return [];
