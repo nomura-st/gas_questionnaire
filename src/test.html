@@ -1,0 +1,61 @@
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      table,
+      td {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="data.js"></script>
+    <script>
+      let body = document.querySelector("body");
+      DATA.map((m) => {
+        let theater = document.createElement("h1");
+        body.appendChild(theater);
+        body.appendChild(document.createElement("hr"));
+        theater.innerHTML = m.name;
+        m.movies.map((d) => {
+          let schedules = d.schedules;
+          // TITLE
+          {
+            let title = document.createElement("h3");
+            body.appendChild(title);
+            title.innerHTML = d.name + `(${d.time})`;
+
+            let image = document.createElement("img");
+            title.appendChild(image);
+            image.src = d.image;
+          }
+
+          let table = document.createElement("table");
+          body.appendChild(table);
+          schedules.forEach((element) => {
+            let tr = document.createElement("tr");
+            table.appendChild(tr);
+            // TYPE
+            {
+              let td = document.createElement("td");
+              tr.appendChild(td);
+              td.innerHTML = element.type == "" ? "通常" : element.type;
+            }
+
+            // TIME
+            {
+              let td = document.createElement("td");
+              tr.appendChild(td);
+              let text = "";
+              element.date.forEach((d) => {
+                text += new Date(parseInt(d + "000", 10)).toLocaleString();
+                text += "<br>";
+              });
+              td.innerHTML = text;
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
