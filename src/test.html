@@ -6,33 +6,147 @@
       td {
         border: 1px solid black;
       }
+      #scheduleDiv {
+        position: absolute;
+        width: 300px;
+      }
+      .sep-day {
+        position: absolute;
+        top: 0px;
+        height: 100%;
+        width: calc(300px / 24);
+        z-index: -100;
+        border-right: 1px dotted gray;
+      }
+      .one-day {
+        width: 300px;
+        border-left: 1px solid gray;
+        border-right: 1px solid gray;
+      }
+      .one-day:hover {
+        background-color: lightgray;
+      }
+      .one-schedule {
+        margin-left: 30%;
+        width: 20px;
+        height: 5px;
+        background-color: blue;
+        border-radius: 2px;
+      }
+      .one-day:hover .one-schedule {
+        height: 20px;
+      }
     </style>
   </head>
   <body>
+    <input id="targetDate" class="target-input" type="date" />
+    <input
+      id="targetTitle"
+      class="target-input"
+      type="text"
+      style="width: 200px"
+    /><br />
+    <div id="scheduleDiv"></div>
+    <template id="one_schedule_temp">
+      <div class="one-day">
+        <div class="one-schedule"></div>
+      </div>
+    </template>
     <script src="data.js"></script>
     <script>
+      let sTemp = document.querySelector("#one_schedule_temp");
+      let scheduleDiv = document.querySelector("#scheduleDiv");
+
       let body = document.querySelector("body");
-      DATA.map((m) => {
-        let theater = document.createElement("h1");
-        body.appendChild(theater);
+      document.querySelectorAll(".target-input").forEach((sel) =>
+        sel.addEventListener("change", (event) => {
+          createBar();
+        })
+      );
+
+      function createBar() {
+        scheduleDiv.innerHTML = "";
+
+        for (let i = 0; i < 24; i++) {
+          let div = document.createElement("div");
+          div.className = "sep-day";
+          div.style.left = parseInt((300 / 24) * i, 10) + "px";
+          scheduleDiv.appendChild(div);
+        }
+
+        let targetTitle = document.querySelector("#targetTitle").value;
+        let targetDate = document.querySelector("#targetDate").value;
+        let targetDay = parseInt(targetDate.split("-")[2], 10);
+        DATA.map((theater) => {
+          theater.movies.map((movie) => {
+            if (targetTitle.trim() && !movie.name.includes(targetTitle)) {
+              return;
+            }
+
+            let movieTime = 120;
+            if (movie.time && movie.time.match(/\d+分/)) {
+              movieTime = parseInt(movie.time.replace("分", ""), 10);
+            }
+
+            movie.schedules.forEach((element) => {
+              // TIME
+              {
+                element.date.forEach((dateString) => {
+                  let dateStart = new Date(parseInt(dateString + "000", 10));
+                  if (targetDay && dateStart.getDate() != targetDay) {
+                    return;
+                  }
+                  let startRatio =
+                    (dateStart.getHours() + dateStart.getMinutes() / 60) / 24;
+                  let spanRatio = movieTime / 60 / 24;
+
+                  // <template>の中身を複製
+                  let clone = document.importNode(
+                    sTemp.content,
+                    true
+                  ).firstElementChild;
+                  scheduleDiv.appendChild(clone);
+
+                  clone.title = `${movie.name}(${
+                    theater.name
+                  }) ${dateStart.toLocaleString()}`;
+                  // 複製したタグに値をセットしてテーブルに挿入
+                  let oneSchedule = clone.querySelector(".one-schedule");
+                  oneSchedule.style.marginLeft =
+                    parseInt(300 * startRatio, 10) + "px";
+                  oneSchedule.style.width =
+                    parseInt(300 * spanRatio, 10) + "px";
+                });
+              }
+            });
+          });
+        });
+      }
+      DATA.map((theater) => {
+        let theaterTitle = document.createElement("h1");
+        body.appendChild(theaterTitle);
         body.appendChild(document.createElement("hr"));
-        theater.innerHTML = m.name;
-        m.movies.map((d) => {
-          let schedules = d.schedules;
+        theaterTitle.innerHTML = theater.name;
+        theater.movies.map((movie) => {
+          let movieTime = 120;
+          if (movie.time && movie.time.match(/\d+分/)) {
+            movieTime = parseInt(movie.time.replace("分", ""), 10);
+          }
+
           // TITLE
           {
             let title = document.createElement("h3");
             body.appendChild(title);
-            title.innerHTML = d.name + `(${d.time})`;
+            title.innerHTML = movie.name + `(${movieTime} min)`;
 
             let image = document.createElement("img");
             title.appendChild(image);
-            image.src = d.image;
+            image.src = movie.image;
           }
 
           let table = document.createElement("table");
           body.appendChild(table);
-          schedules.forEach((element) => {
+          movie.schedules.forEach((element) => {
             let tr = document.createElement("tr");
             table.appendChild(tr);
             // TYPE
@@ -47,8 +161,9 @@
               let td = document.createElement("td");
               tr.appendChild(td);
               let text = "";
-              element.date.forEach((d) => {
-                text += new Date(parseInt(d + "000", 10)).toLocaleString();
+              element.date.forEach((dateString) => {
+                let dateStart = new Date(parseInt(dateString + "000", 10));
+                text += dateStart.toLocaleString();
                 text += "<br>";
               });
               td.innerHTML = text;
