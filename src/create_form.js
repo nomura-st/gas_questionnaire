@@ -1,21 +1,3 @@
-// 対象データシート名
-const SHEETNAME_DATA = "データ";
-// 対象データシート名（映画館）
-const SHEETNAME_ROADSHOW_DATA = "データ_映画館";
-const SHEETNAME_ROADSHOW = "映画館";
-
-// 設定ラベル
-const CUSTOM_CELL_LABEL = {
-  FORM_ID: "アンケート用FormID",
-  FORM_TITLE: "タイトル",
-  FORM_DESCRIPTION: "説明",
-  SELECTION_TITLE: "選択肢のタイトル",
-  SELECTION_DESC: "選択肢の説明",
-  SELECTION_DATA_START: "映画タイトル",
-};
-// 設定ラベルを探す最大行
-const CUSTOM_SEARCH_ROW_MAX = 500;
-
 /**
  * データからアンケートFormを作成
  */
@@ -79,7 +61,7 @@ function createForm() {
 function createSelectText(obj) {
   return (
     `【${obj.title}】 ${obj.desc}` +
-    (obj.count > 0 ? ` （投票数:${obj.count}）` : "")
+    (obj.count && obj.count > 0 ? ` （投票数:${obj.count}）` : "")
   );
 }
 
@@ -127,7 +109,7 @@ function getMoviesData(sheet) {
 }
 
 ////////////////////////////////
-// 以下、ライブラリ
+// 以下、ライブラリ（システムF仕様を含まない）
 /**
  * A列から対象文字列を検索し、行数を返す
  * @param {*} sheet 対象シート
@@ -159,6 +141,19 @@ function customVal(sheet, key) {
   }
   // 見つからなかった
   return "";
+}
+/**
+ * カスタマイズ設定を設定
+ * A列からkeyを検索し、見つかった行に値を設定(デフォルトはB列)
+ * @param {*} sheet 対象シート
+ * @param {*} key 設定の種類
+ * @param {*} val 設定値
+ */
+function customSet(sheet, key, val, col = 2) {
+  let row = findKeyFromA(sheet, key);
+  if (row) {
+    return sheet.getRange(row, col).setValue(val);
+  }
 }
 
 /**

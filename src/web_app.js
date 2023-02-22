@@ -1,6 +1,3 @@
-// 対象シート名
-const SHEETNAME_ROADSHOW = "上映中";
-
 /**
  * SHEETNAME_ROADSHOW のシートの情報を、GETの応答としてical形式で出力する
  * @param {*} e 引数など(対象の映画館)
