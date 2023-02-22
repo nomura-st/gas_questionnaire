@@ -11,6 +11,8 @@ const CUSTOM_CELL_LABEL = {
   FORM_DESCRIPTION: "説明",
   SELECTION_TITLE: "選択肢のタイトル",
   SELECTION_DESC: "選択肢の説明",
+  IMAGE_TITLE: "画像タイトル",
+  IMAGE_URL: "画像URL",
   SELECTION_DATA_START: "映画タイトル",
 };
 // 設定ラベルを探す最大行

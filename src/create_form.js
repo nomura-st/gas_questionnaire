@@ -68,6 +68,24 @@ function createForm_RoadShow() {
     }
   });
 
+  // 映画を設定
+  let row = findKeyFromA(sheet, CUSTOM_CELL_LABEL.SELECTION_DATA_START);
+  // ヘッダ分の次の行
+  row += 1;
+  // 初期化用
+  const clearArray = [];
+  for (i = row; i < CUSTOM_SEARCH_ROW_MAX; i++) {
+    clearArray.push([""]);
+  }
+  setTable(sheet, row, 1, clearArray);
+  // 実データ
+  setTable(
+    sheet,
+    row,
+    1,
+    Object.keys(uniqMap).map((title) => [title])
+  );
+
   // ******************************
   // *** アンケート質問 ***
   // ******************************
@@ -109,19 +127,31 @@ function createForm_RoadShow() {
  */
 function __createFormBase(ss, sheet, formInfo) {
   let form = null;
-  // アンケート用質問
   let mainQuestion = null;
+  let imageItem = null;
 
   const formId = customVal(sheet, CUSTOM_CELL_LABEL.FORM_ID);
   if (formId) {
     // ID指定あれば既存のFormを流用
     form = FormApp.openById(formId);
+
     // 既存の質問の中から対象を検索
     let itemsNum = form.getItems();
     for (let i = 0; i < itemsNum.length; i++) {
       let c = form.getItems()[i];
-      if (c.getTitle() == formInfo.mainSelection.title) {
+      // アンケート用質問
+      if (
+        c.getTitle() == formInfo.mainSelection.title &&
+        c.getType() == FormApp.ItemType.CHECKBOX
+      ) {
         mainQuestion = c.asCheckboxItem();
+      }
+      // 画像アイテム
+      if (
+        c.getTitle() == formInfo.imageItem.title &&
+        c.getType() == FormApp.ItemType.IMAGE
+      ) {
+        imageItem = c.asImageItem();
       }
     }
   } else {
@@ -135,12 +165,24 @@ function __createFormBase(ss, sheet, formInfo) {
   if (mainQuestion == null) {
     mainQuestion = form.addCheckboxItem();
   }
+  if (formInfo.imageItem.url && imageItem == null) {
+    imageItem = form.addImageItem();
+  }
 
   // アンケートの基本データを設定
   form.setTitle(formInfo.title);
   form.setDescription(formInfo.desc);
 
-  return { form, mainQuestion };
+  // 画像アイテムも設定
+  imageItem
+    .setTitle(formInfo.imageItem.title)
+    .setImage(
+      UrlFetchApp.fetch(
+        formInfo.imageItem.url + "&__temp=" + new Date().getTime()
+      )
+    );
+
+  return { form, mainQuestion, imageItem };
 }
 
 /**
@@ -167,6 +209,10 @@ function getFormInfo(sheet) {
       title: customVal(sheet, CUSTOM_CELL_LABEL.SELECTION_TITLE),
       desc: customVal(sheet, CUSTOM_CELL_LABEL.SELECTION_DESC),
       selections: getMoviesData(sheet),
+    },
+    imageItem: {
+      title: customVal(sheet, CUSTOM_CELL_LABEL.IMAGE_TITLE),
+      url: customVal(sheet, CUSTOM_CELL_LABEL.IMAGE_URL),
     },
   };
 
@@ -284,35 +330,15 @@ function customTable(sheet, firstRow, firstCol, colNum, isChange = true) {
  * 表形式データを設定
  * 指定されたfirstRow,firstColから二重配列データを表形式として設定
  * @param {*} sheet 対象シート
- * @param {*} val 二重配列
+ * @param {*} valuesArr 二重配列
  */
-function setTable(sheet, firstRow, firstCol, colNum, val) {
-  // 指定された行から、firstCol列が空になる行まで
-  for (let r = firstRow; r - firstRow < CUSTOM_SEARCH_ROW_MAX; r++) {
-    let value = sheet.getRange(r, firstCol).getDisplayValue();
-    if (value == "") {
-      let rowNum = r - firstRow;
-      console.log(
-        `get table from SHEET[${sheet.getSheetName()}] ` +
-          `at range(row:${firstRow}-${r}, col:${firstCol}-${firstCol + colNum})`
-      );
-      if (rowNum == 0) {
-        // データなし
-        return [];
-      }
-
-      // 見つかった範囲を二重配列で返す
+function setTable(sheet, firstRow, firstCol, valuesArr) {
+  // 指定された行から、valが空になる行まで
+  valuesArr.forEach((row, indexRow) => {
+    row.forEach((val, indexCol) => {
       return sheet
-        .getRange(firstRow, firstCol, rowNum, colNum)
-        .getDisplayValues();
-    } else {
-      if (isChange) {
-        // Form作成時に違いが出ないようにタイトルを修正
-        sheet
-          .getRange(r, firstCol)
-          .setValue(value.trim().replaceAll(/[\s　]+/g, " "));
-      }
-    }
-  }
-  return [];
+        .getRange(firstRow + indexRow, firstCol + indexCol)
+        .setValue(val);
+    });
+  });
 }
