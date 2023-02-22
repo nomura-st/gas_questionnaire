@@ -1,5 +1,9 @@
-// 対象シート名
+// 対象データシート名
 const SHEETNAME_DATA = "データ";
+// 対象データシート名（映画館）
+const SHEETNAME_ROADSHOW_DATA = "データ_映画館";
+const SHEETNAME_ROADSHOW = "映画館";
+
 // 設定ラベル
 const CUSTOM_CELL_LABEL = {
   FORM_ID: "アンケート用FormID",
@@ -105,14 +109,21 @@ function getMoviesData(sheet) {
   // ヘッダ分の次の行
   row += 1;
   let table = customTable(sheet, row, 1, 4);
-  return table.map((line) => {
-    return {
-      title: line[0],
-      desc: line[1],
-      image: line[2],
-      count: line[3],
-    };
-  });
+  return (
+    table
+      .map((line) => {
+        return {
+          title: line[0],
+          desc: line[1],
+          image: line[2],
+          count: line[3],
+        };
+      })
+      // 投票数で降順ソートする
+      .sort((data1, data2) => {
+        return data2.count - data1.count;
+      })
+  );
 }
 
 ////////////////////////////////
