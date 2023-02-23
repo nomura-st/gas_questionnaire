@@ -104,5 +104,15 @@ dist
 .tern-port
 
 
+### Add for project
+~~*/
+
 # For clasp
 .clasp.json
+
+# For google drive API
+client_secrets.json
+credentials.json
+
+# For spreadsheets
+drive-*.json
