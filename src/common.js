@@ -16,4 +16,4 @@ const CUSTOM_CELL_LABEL = {
   SELECTION_DATA_START: "映画タイトル",
 };
 // 設定ラベルを探す最大行
-const CUSTOM_SEARCH_ROW_MAX = 500;
+const CUSTOM_SEARCH_ROW_MAX = 1500;

@@ -1,12 +1,18 @@
+import requests
+import re
+from bs4 import BeautifulSoup  # BeautifulSoupクラスをインポート
+import datetime
+import gspread
+
+# ★★★ ↓↓↓コマンド用↓↓↓ ★★★
+import sys
+gc = gspread.service_account(filename=sys.argv[1])
+# ★★★ ↑↑↑コマンド用↑↑↑ ★★★
+
 #############################
 # カスタム情報
 #############################
 # 読み書き対象スプレッドシートID
-import gspread
-import datetime
-from bs4 import BeautifulSoup  # BeautifulSoupクラスをインポート
-import re
-import requests
 ssID = '11HxD-a2Sq8DXPEEiVfZmNtEqkdOxJKZckPRkkT0GOJY'
 # 読み書き対象スプレッドシート シート名
 sheetName = '映画館'
@@ -24,9 +30,9 @@ paths = {
 }
 
 
-gc = gspread.service_account(filename='/home/pi/dev/py_ss/drive-service.json')
-
-
+#############################
+# 関数
+#############################
 def select(url, selector):
     html = requests.get(url)
     # 取得したHTMLをBeautifulSoupを使ってパースします。
@@ -38,22 +44,51 @@ def select(url, selector):
 
 
 def getMoviesFromEiga(url, path):
-    # パースしたHTMLから特定の要素を抽出します。結果はリストで返ってきます。
+    # 1つの映画館ごとの映画情報取得
     movies = select(url + path, "main .content-container section[data-title]")
     obj = []
     print("*********************************************")
     print(f'GET INFO from {path}')
 
     for movie in filter(lambda m: len(m.select("h2 a")) > 0, movies):
+        # 1つの映画ごとの情報を取得
         print(f'TRY {movie["data-title"]}')
+        # .movie-schedule => 1つの映画のスケジュール表
         m = {
             "name": movie["data-title"],
             "schedules": list(map(lambda t: {
                 "type": t.select(".movie-type")[0].get_text("/") if len(t.select(".movie-type")) > 0 else "",
-                "date": list(map(lambda d: d["data-time"], t.select("td [data-time]"))),
+                "date": list(),
             }, movie.select(".movie-schedule"))),
             "time": "0",
         }
+
+        for td in movie.select(".movie-schedule td[data-date]"):
+            dateStr = td["data-date"]
+            print("  対象日付 > " + dateStr)
+
+            if len(td.select("[data-time]")) > 0:
+                # Unix時間あり(予約できる日付)
+                m["schedules"][0]["date"].extend(
+                    list(map(lambda d: d["data-time"],
+                         td.select("[data-time]")))
+                )
+            else:
+                # Unix時間なしのため、文字列から時間を生成
+                for span in td.select("span"):
+                    # span 直下の文字列が日付の場合のみ追加
+                    timeStr = str(span.get_text()).strip()
+                    print("***TEST***" + timeStr)
+                    if re.match("^(\d+):(\d+)", timeStr):
+                        timeStr = re.sub("～.*", "", timeStr).strip()
+                        print("    対象時刻(追加分) > " + timeStr)
+                        dt = datetime.datetime.strptime(
+                            dateStr + " " + timeStr + ' +0900', '%Y%m%d %H:%M %z')
+                        # TODO: schedulesはlistである必要なさそう？
+                        m["schedules"][0]["date"].append(int(dt.timestamp()))
+
+        print(
+            f'  => GET {"/".join(list(map(str, m["schedules"][0]["date"])))}')
 
         if len(movie.select(".movie-image img")) > 0:
             m["image"] = movie.select(".movie-image img")[0]["src"]
@@ -71,38 +106,27 @@ def getMoviesFromEiga(url, path):
     return obj
 
 
-# import json
+#############################
+# メイン処理開始
+#############################
 
+##### 映画館ごとの上映中映画情報一覧を取得 #####
 theaters = list(map(lambda name: {
     "name": name,
     "movies": getMoviesFromEiga(prefURL, paths[name]),
 }, paths.keys()))
 
-# print (json.dumps(theaters, ensure_ascii=False))
 
-
-# 認証のためのコード
-# from google.colab import auth
-# auth.authenticate_user()
-# import gspread
-# from google.auth import default
-# creds, _ = default()
-# gc = gspread.authorize(creds)
-
-# gc = gspread.oauth(
-#     credentials_filename='./client_secrets.json',
-# )
-
+##### 取得した情報をSpreadSheetsに出力 #####
 ss = gc.open_by_key(ssID)
 sheet = ss.worksheet(sheetName)
 
 # 既存を削除
-ss.values_clear(f'\'{sheetName}\'!B2:J501')
+ss.values_clear(f'\'{sheetName}\'!B2:J1501')
 
-ds = sheet.range(f'B2:J501')
-
+ds = sheet.range(f'B2:J1501')
 row = rowStart
-# 日時１つを１行として書き込み
+# 日時１つを１行分としてデータ生成
 for theater in theaters:
     print("*********************************************")
     print(f'*** THEATER: {theater["name"]} ***')
@@ -112,6 +136,12 @@ for theater in theaters:
 
         for schedule in movie["schedules"]:
             for d in schedule["date"]:
+                # 書き込み対象データ位置
+                offset = (row - rowStart) * 9
+                if offset >= len(ds):
+                    # データ生成終了
+                    break
+
                 dt = datetime.datetime.fromtimestamp(
                     int(d), datetime.timezone.utc)
                 # 日本のタイムゾーン調整
@@ -125,7 +155,6 @@ for theater in theaters:
                 timeEndStr = dtEnd.strftime('%H:%M:%S')
 
                 # 書き込みデータ
-                offset = (row - rowStart) * 9
                 ds[offset + 0].value = movie["name"]
                 ds[offset + 1].value = schedule["type"]
                 ds[offset + 2].value = dateStr
