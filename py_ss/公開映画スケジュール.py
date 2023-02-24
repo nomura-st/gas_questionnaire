@@ -24,6 +24,9 @@ paths = {
 }
 
 
+gc = gspread.service_account(filename='/home/pi/dev/py_ss/drive-service.json')
+
+
 def select(url, selector):
     html = requests.get(url)
     # 取得したHTMLをBeautifulSoupを使ってパースします。
@@ -86,10 +89,9 @@ theaters = list(map(lambda name: {
 # creds, _ = default()
 # gc = gspread.authorize(creds)
 
-gc = gspread.oauth(
-    credentials_filename='./client_secrets.json',
-)
-
+# gc = gspread.oauth(
+#     credentials_filename='./client_secrets.json',
+# )
 
 ss = gc.open_by_key(ssID)
 sheet = ss.worksheet(sheetName)
@@ -119,7 +121,7 @@ for theater in theaters:
                     datetime.timedelta(minutes=int(movie["time"]) + 10)
                 dateStr = dt.strftime('%Y/%m/%d')
                 timeStartStr = dt.strftime('%H:%M:%S')
-                timeStartStrAbout = dt.strftime('%p%H時台')
+                timeStartStrAbout = dt.strftime('%H時台')
                 timeEndStr = dtEnd.strftime('%H:%M:%S')
 
                 # 書き込みデータ
