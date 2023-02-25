@@ -37,12 +37,9 @@ function createForm_RoadShow() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEETNAME_ROADSHOW_DATA);
 
-  // アンケートFormの情報
-  const formInfo = getFormInfo(sheet);
-  // *** 作成先アンケートとなるForm, アンケート用質問 ***
-  let { form, mainQuestion } = __createFormBase(ss, sheet, formInfo);
-
-  // 映画館シートから、公開中映画を収集
+  // ******************************
+  // *** 映画館シートから、公開中映画を収集 ***
+  // ******************************
   const sheetRoadShow = ss.getSheetByName(SHEETNAME_ROADSHOW);
   let result = customTable(sheetRoadShow, 2, 2, 9, false);
   // 映画タイトルごとの重複なしオブジェクト化する
@@ -85,6 +82,13 @@ function createForm_RoadShow() {
     1,
     Object.keys(uniqMap).map((title) => [title])
   );
+  // ******************************
+  // ******************************
+
+  // アンケートFormの情報
+  const formInfo = getFormInfo(sheet);
+  // *** 作成先アンケートとなるForm, アンケート用質問 ***
+  let { form, mainQuestion } = __createFormBase(ss, sheet, formInfo);
 
   // ******************************
   // *** アンケート質問 ***
@@ -224,21 +228,18 @@ function getMoviesData(sheet) {
   // ヘッダ分の次の行
   row += 1;
   let table = customTable(sheet, row, 1, 4);
-  return (
-    table
-      .map((line) => {
-        return {
-          title: line[0],
-          desc: line[1],
-          image: line[2],
-          count: line[3],
-        };
-      })
-      // 投票数で降順ソートする
-      .sort((data1, data2) => {
-        return data2.count - data1.count;
-      })
-  );
+  return table.map((line) => {
+    return {
+      title: line[0],
+      desc: line[1],
+      image: line[2],
+      count: line[3],
+    };
+  });
+  // // 投票数で降順ソートする
+  // .sort((data1, data2) => {
+  //   return data2.count - data1.count;
+  // })
 }
 
 ////////////////////////////////
