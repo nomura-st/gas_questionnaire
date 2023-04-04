@@ -90,34 +90,48 @@ function createForm_RoadShow() {
   // *** 作成先アンケートとなるForm, アンケート用質問 ***
   let { form, mainQuestion } = __createFormBase(ss, sheet, formInfo);
 
+  // 映画選択肢
+  let choices = Object.keys(uniqMap).map((title) => {
+    let type =
+      uniqMap[title].type.size > 0
+        ? [...uniqMap[title].type].sort().join(",")
+        : "";
+    let time =
+      uniqMap[title].time.size > 0
+        ? [...uniqMap[title].time].sort().join("/")
+        : "";
+    let theater =
+      uniqMap[title].theater.size > 0
+        ? [...uniqMap[title].theater].sort().join("/")
+        : "";
+    return mainQuestion.createChoice(
+      createSelectText({
+        title: title,
+        desc: `${type} (${time}) ${theater}  ${uniqMap[title].link}`,
+      })
+    );
+  });
+  // 公開予定の選択肢を追加
+  choices = choices.concat(
+    customTable(ss.getSheetByName("公開予定"), 2, 2, 4, false)
+      .filter((line) => !uniqMap[line[0]])
+      .map((line) =>
+        mainQuestion.createChoice(
+          createSelectText({
+            title: line[0],
+            desc: `(★${line[1]} 公開予定) ${line[3]}`,
+          })
+        )
+      )
+  );
+
   // ******************************
   // *** アンケート質問 ***
   // ******************************
   mainQuestion
     .setTitle(formInfo.mainSelection.title)
     .setHelpText(formInfo.mainSelection.desc)
-    .setChoices(
-      Object.keys(uniqMap).map((title) => {
-        let type =
-          uniqMap[title].type.size > 0
-            ? [...uniqMap[title].type].sort().join(",")
-            : "";
-        let time =
-          uniqMap[title].time.size > 0
-            ? [...uniqMap[title].time].sort().join("/")
-            : "";
-        let theater =
-          uniqMap[title].theater.size > 0
-            ? [...uniqMap[title].theater].sort().join("/")
-            : "";
-        return mainQuestion.createChoice(
-          createSelectText({
-            title: title,
-            desc: `${type} (${time}) ${theater}  ${uniqMap[title].link}`,
-          })
-        );
-      })
-    );
+    .setChoices(choices);
 }
 
 ////////////////////////////////
