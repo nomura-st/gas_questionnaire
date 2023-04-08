@@ -275,6 +275,6 @@ def getCommingFromEiga(url):
 #############################
 # メイン処理開始
 #############################
-# getRoadShow(SS_ID, SHEET_NAME_ROADSHOW, ROW_START)
+getRoadShow(SS_ID, SHEET_NAME_ROADSHOW, ROW_START)
 
 getCommingSoon(SS_ID, SHEET_NAME_COMMING, ROW_START)

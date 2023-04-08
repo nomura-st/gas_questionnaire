@@ -90,30 +90,42 @@ function createForm_RoadShow() {
   // *** 作成先アンケートとなるForm, アンケート用質問 ***
   let { form, mainQuestion } = __createFormBase(ss, sheet, formInfo);
 
+  // 対象外リスト
+  const ignoreList = customTable(
+    ss.getSheetByName("視聴済み"),
+    1,
+    1,
+    1,
+    false
+  ).map((line) => line[0]);
+
   // 映画選択肢
-  let choices = Object.keys(uniqMap).map((title) => {
-    let type =
-      uniqMap[title].type.size > 0
-        ? [...uniqMap[title].type].sort().join(",")
-        : "";
-    let time =
-      uniqMap[title].time.size > 0
-        ? [...uniqMap[title].time].sort().join("/")
-        : "";
-    let theater =
-      uniqMap[title].theater.size > 0
-        ? [...uniqMap[title].theater].sort().join("/")
-        : "";
-    return mainQuestion.createChoice(
-      createSelectText({
-        title: title,
-        desc: `${type} (${time}) ${theater}  ${uniqMap[title].link}`,
-      })
-    );
-  });
+  let choices = Object.keys(uniqMap)
+    .filter((title) => !ignoreList.includes(title))
+    .map((title) => {
+      let type =
+        uniqMap[title].type.size > 0
+          ? [...uniqMap[title].type].sort().join(",")
+          : "";
+      let time =
+        uniqMap[title].time.size > 0
+          ? [...uniqMap[title].time].sort().join("/")
+          : "";
+      let theater =
+        uniqMap[title].theater.size > 0
+          ? [...uniqMap[title].theater].sort().join("/")
+          : "";
+      return mainQuestion.createChoice(
+        createSelectText({
+          title: title,
+          desc: `${type} (${time}) ${theater}  ${uniqMap[title].link}`,
+        })
+      );
+    });
   // 公開予定の選択肢を追加
   choices = choices.concat(
     customTable(ss.getSheetByName("公開予定"), 2, 2, 4, false)
+      .filter((title) => !ignoreList.includes(title))
       .filter((line) => !uniqMap[line[0]])
       .map((line) =>
         mainQuestion.createChoice(
