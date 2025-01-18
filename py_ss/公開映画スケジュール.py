@@ -87,12 +87,12 @@ def select(url, selector):
 
 
 def getMoviesFromEiga(url, path):
-    movies = select(url + path, "main .content-container section[data-title]")
     obj = []
     print("*********************************************")
     print(f'GET INFO from {path}')
 
-    for movie in filter(lambda m: len(m.select("h2 a")) > 0, movies):
+    # -2024
+    for movie in filter(lambda m: len(m.select("h2 a")) > 0, select(url + path, "main .content-container section[data-title]")):
         # 1つの映画ごとの情報を取得
         print(f'TRY {movie["data-title"]}')
         # .movie-schedule => 1つの映画のスケジュール表
@@ -142,6 +142,53 @@ def getMoviesFromEiga(url, path):
 
         if len(movie.select("h2 a")) > 0:
             m["link"] = baseURL + movie.select("h2 a")[0]["href"]
+
+        obj.append(m)
+
+    # 2025-
+    for movie in select(url + path, ".main-column #tab01_content.tabs__content > .mb-20"):
+        # 1つの映画ごとの情報を取得
+        moviename = movie.select(".line-clamp-1")[0].get_text()
+        print(f'TRY {moviename}')
+        #  .mb-40 => 1つの映画のスケジュール表
+        m = {
+            "name": moviename,
+            "schedules": list(map(lambda t: {
+                "type": '/'.join(list(map(lambda ty: ty.get_text(), t.select(".movie-type")))),
+                "date": list(),
+            }, movie.select(".mb-40"))),
+            "time": "0",
+        }
+
+        dateStr = str(datetime.date.today())
+        print("  対象日付 > " + dateStr)
+
+        # 文字列から時間を生成
+        for span in movie.select(".weekly-schedule__btn"):
+            # span 直下の文字列が日付の場合のみ追加
+            timeStr = str(span.get_text()).strip()
+            print("***TEST***" + timeStr)
+            if re.match("^(\d+):(\d+)", timeStr):
+                timeStr = re.sub("～.*", "", timeStr).strip()
+                print("    対象時刻(追加分) > " + timeStr)
+                dt = datetime.datetime.strptime(
+                    dateStr + " " + timeStr + ' +0900', '%Y-%m-%d %H:%M %z')
+                # TODO: schedulesはlistである必要なさそう？
+                m["schedules"][0]["date"].append(int(dt.timestamp()))
+
+        print(
+            f'  => GET {"/".join(list(map(str, m["schedules"][0]["date"])))}')
+
+        # if len(movie.select(".movie-image img")) > 0:
+        #     m["image"] = movie.select(".movie-image img")[0]["src"]
+
+        for i in movie.select(".link-btn-discription"):
+            timeResult = re.match("(\d+)[分]*", i.get_text().strip())
+            if timeResult:
+                m["time"] = timeResult.group(1)
+
+        if len(movie.select("a.w100per")) > 0:
+            m["link"] = baseURL + movie.select("a.w100per")[0]["href"]
 
         obj.append(m)
 
