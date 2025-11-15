@@ -32,7 +32,7 @@ paths = {
 }
 
 # 公開予定
-commingURL = 'https://109cinemas.net/comingsoon/'
+commingURL = 'https://www.unitedcinemas.jp/maebashi/movie.php'
 
 
 #############################
@@ -290,30 +290,28 @@ def getCommingSoon(ssID, sheetName, rowStart):
 
 
 def getCommingFromEiga(url):
-    movies = select(url, "#contents > article, #contents > h2 time")
+    movies = select(url, "#top #showingList li .movieHead")
     obj = []
     date = ''
     print("*********************************************")
     print(f'GET COMMING INFO from {url}')
 
     for movie in movies:
-        if len(movie.select(".main > a")) > 0:
-            name = movie.select(".main > a header h1")[0].get_text()
-            if any(list(map(lambda t: t.get_text() == "高崎", movie.select(".side li.hidden")))):
-                print(f'映画 {name} は高崎で上映対象外')
-            else:
-                # eiga.comで検索して正規化
-                eigaObj = searchMovie(name)
-                m = {
-                    "name": eigaObj["name"],
-                    "date": date,
-                    "info": ", ".join(list(map(lambda t: t.get_text(), movie.select(".main > a > p")))),
-                    "link": eigaObj["link"],
-                }
-                obj.append(m)
-                print(f'映画情報 {name}')
-        else:
-            date = movie.get_text()
+        if len(movie.select("h3 strong a")) > 0:
+            name = movie.select("h3 strong a")[0].get_text()
+            date = movie.select("h3 em")[0].get_text()
+            # 公開 以降を削除
+            date = re.sub("(（|公開).+", "", date)
+            # eiga.comで検索して正規化
+            eigaObj = searchMovie(name)
+            m = {
+                "name": eigaObj["name"],
+                "date": date,
+                "info": ", ".join(list(map(lambda t: t.get_text(), movie.select(".main > a > p")))),
+                "link": eigaObj["link"],
+            }
+            obj.append(m)
+            print(f'映画情報 {name}')
             print(f'公開日付 {date}')
 
     return obj
